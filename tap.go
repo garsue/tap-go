@@ -25,8 +25,9 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
+	"testing/quick"
 )
-import "testing/quick"
 
 // T is a type to encapsulate test state.  Methods on this type generate TAP
 // output.
@@ -38,6 +39,8 @@ type T struct {
 
 	// Writer indicates where TAP output should be sent.  The default is os.Stdout.
 	Writer io.Writer
+
+	m sync.RWMutex
 }
 
 // New creates a new Tap value
@@ -72,6 +75,9 @@ func (t *T) Header(testCount int) {
 
 // Ok generates TAP output indicating whether a test passed or failed.
 func (t *T) Ok(test bool, description string) {
+	t.m.Lock()
+	defer t.m.Unlock()
+
 	// did the test pass or not?
 	ok := "ok"
 	if !test {
@@ -113,6 +119,8 @@ func (t *T) Check(function interface{}, description string) {
 
 // Count returns the number of tests completed so far.
 func (t *T) Count() int {
+	t.m.RLock()
+	defer t.m.RUnlock()
 	return *t.nextTestNumber - 1
 }
 
@@ -134,6 +142,8 @@ func (t *T) Todo() *T {
 
 // Skip indicates that a test has been skipped.
 func (t *T) Skip(count int, description string) {
+	t.m.Lock()
+	defer t.m.Unlock()
 	for i := 0; i < count; i++ {
 		t.printf("ok %d # SKIP %s\n", *t.nextTestNumber, description)
 		(*t.nextTestNumber)++

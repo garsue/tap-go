@@ -1,4 +1,4 @@
-TESTS = auto check diagnostic failing known skip todo writer yaml
+TESTS = auto check diagnostic failing known skip todo writer yaml parallel
 GOPATH ?= $(CURDIR)/gopath
 
 .PHONY: $(TESTS)
@@ -10,7 +10,7 @@ clean:
 	rm -f test/*/test
 
 test/%/test: test/%/*.go tap.go yaml_json.go yaml_yaml.go
-	go build -o $@ -tags yaml ./test/$*
+	go build -race -o $@ -tags yaml ./test/$*
 
 $(TESTS): %: test/%/test
 	prove -v -e '' test/$@/test
